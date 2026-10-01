@@ -50,7 +50,8 @@ class SCFEnergy;
 class MomentumOperator;
 class KineticOperator;
 class ZoraKineticOperator;
-class ZoraOperator;
+// class ZoraOperator;
+class CouplingOperator;
 class AZoraPotential;
 class NuclearOperator;
 class CoulombOperator;
@@ -131,14 +132,15 @@ private:
     std::shared_ptr<ElectricFieldOperator> ext{nullptr}; // Total external potential
     std::shared_ptr<MagneticFieldOperator> mag{nullptr}; // External magnetic field interaction
     std::shared_ptr<MagneticFieldOperatorImag> mag_imag{nullptr}; // External magnetic field interaction - imaginary component
-    std::shared_ptr<ZoraOperator> chi{nullptr};
-    std::shared_ptr<ZoraOperator> chi_inv{nullptr};
+    std::shared_ptr<CouplingOperator> chi{nullptr};      // chi = V/(2mc^2 - V) for ZORA
+    std::shared_ptr<CouplingOperator> chi_inv{nullptr};
     std::shared_ptr<ProjectorOperator> pp_projector{nullptr};
 
 
     std::shared_ptr<QMPotential> collectZoraBasePotential();
     OrbitalVector buildHelmholtzArgumentZORA(OrbitalVector &Phi, OrbitalVector &Psi, DoubleVector eps, double prec);
     OrbitalVector buildHelmholtzArgumentNREL(OrbitalVector &Phi, OrbitalVector &Psi);
+    OrbitalVector buildHelmholtzArgumentCompact(OrbitalVector &Phi, OrbitalVector &Psi);
     std::shared_ptr<AZoraPotential> chiPot{nullptr}; // Potential for AZORA chi operator
     std::shared_ptr<QMPotential> chiInvPot{nullptr}; // Potential for AZORA chi_inv operator
 };

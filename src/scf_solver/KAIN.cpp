@@ -75,9 +75,11 @@ void KAIN::setupLinearSystem() {
 
                     // Ref. Harrisons KAIN paper the following has the wrong sign,
                     // but we define the updates (lowercase f) with opposite sign.
-                    orbA(i, j) -= mrcpp::dot(dPhi_im, dfPhi_jm);
+                    // orbA(i, j) -= mrcpp::dot(dPhi_im, dfPhi_jm);
+                    orbA(i, j) -= ComplexDouble( std::real(mrcpp::dot(dPhi_im, dfPhi_jm)), 0.0 );
                 }
-                orbB(i) += mrcpp::dot(dPhi_im, fPhi_m);
+                // orbB(i) += mrcpp::dot(dPhi_im, fPhi_m);
+                orbB(i) += ComplexDouble( std::real(mrcpp::dot(dPhi_im, fPhi_m)), 0.0 );
             }
         }
         double alpha = (this->scaling.size() == nOrbitals) ? scaling[n] : 1.0;
@@ -169,13 +171,14 @@ void KAIN::expandSolution(double prec, OrbitalVector &Phi, OrbitalVector &dPhi, 
                 auto partStep = phi_m.paramCopy(true);
                 mrcpp::linear_combination(partStep, partCoefs, partOrbs, prec);
 
-                auto c_j = this->c[m](j);
+                auto c_j = this->c[m](j); //all you had to do was to follow the damn KAIN, c_j!
                 totCoefs.push_back(c_j);
                 totOrbs.push_back(partStep);
             }
 
             std::vector<ComplexDouble> coefsVec(totCoefs.size());
             for (size_t i = 0; i < totCoefs.size(); i++) coefsVec[i] = totCoefs[i];
+            // for (size_t i = 0; i < totCoefs.size(); i++) coefsVec[i] = std::real(totCoefs[i]);
 
             dPhi[n] = Phi[n].paramCopy(true);
             mrcpp::linear_combination(dPhi[n], coefsVec, totOrbs, prec);

@@ -26,6 +26,7 @@
 #pragma once
 
 #include "tensor/RankZeroOperator.h"
+#include "qmoperators/one_electron/CouplingOperator.h"
 #include <string>
 
 namespace mrchem {
@@ -39,7 +40,8 @@ class QMPotential;
  * in order to get the kappa operator. kappa * phi = chi * phi + phi
  * This has to be done manually.
  */
-class ZoraOperator final : public RankZeroOperator {
+// class ZoraOperator final : public RankZeroOperator {
+class ZoraOperator final : public CouplingOperator {
 public:
     /**
      * @brief Constructor for the ZoraOperator that contains the chi = kappa - 1 function.

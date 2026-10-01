@@ -350,10 +350,15 @@ def write_scf_properties(user_dict, origin):
 
 def write_scf_plot(user_dict):
     plot_dict = {}
-    if user_dict["Properties"]["plot_density"] or len(
-        user_dict["Properties"]["plot_orbitals"]
+    if (
+        user_dict["Properties"]["plot_density"]
+        or len(user_dict["Properties"]["plot_orbitals"])
+        or len(user_dict["Properties"]["plot_orbital_densities"])
     ):
         plot_dict["orbitals"] = user_dict["Properties"]["plot_orbitals"]
+        plot_dict["orbital_densities"] = user_dict["Properties"][
+            "plot_orbital_densities"
+        ]
         plot_dict["density"] = user_dict["Properties"]["plot_density"]
         plot_dict["plotter"] = user_dict["Plotter"]
         if user_dict["world_unit"] == "angstrom":
@@ -744,6 +749,7 @@ def parse_wf_method(user_dict):
             f"Invalid wavefunction method {user_dict['WaveFunction']['method']}"
         )
 
+
     # Determine relativity name label for print outs to the output file
     relativity_name = "None"
     wf_dict = dict()
@@ -831,6 +837,7 @@ def parse_wf_method(user_dict):
     wf_dict["method_name"] = method_name
     wf_dict["method_type"] = method_type
     wf_dict["dft_funcs"] = dft_funcs
+    wf_dict["spinor_components"] = user_dict["WaveFunction"]["spinor_components"]
     return wf_dict
 
 def compute_kappa(constants, eps, I):
