@@ -52,7 +52,7 @@ bool initial_guess::mw::setup(OrbitalVector &Phi, double prec, const std::string
     print_utils::text(0, "Calculation   ", "Compute initial orbitals");
     print_utils::text(0, "Method        ", "Project MW molecular orbitals");
     print_utils::text(0, "Precision     ", print_utils::dbl_to_str(prec, 5, true));
-    if (orbital::size_singly(Phi)) {
+    if (! orbital::size_doubly(Phi)) {
         print_utils::text(0, "Restricted    ", "False");
         print_utils::text(0, "MO alpha file ", file_a);
         print_utils::text(0, "MO beta file  ", file_b);
@@ -102,7 +102,7 @@ bool initial_guess::mw::project_mo(OrbitalVector &Phi, double prec, const std::s
 
     bool success = true;
     bool iscomplex = false;
-    for (int i = 0; i < Phi.size(); i++) {
+    for (size_t i = 0; i < Phi.size(); i++) {
         Timer t_i;
         if (mrcpp::mpi::my_func(Phi[i])) {
             std::stringstream orbname;
@@ -137,7 +137,7 @@ bool initial_guess::mw::project_mo(OrbitalVector &Phi, double prec, const std::s
     MPI_Bcast(&iscomplex, 1, MPI_C_BOOL, 0, mrcpp::mpi::comm_wrk);
 #endif
     if (iscomplex) {
-        for (int i = 0; i < Phi.size(); i++) Phi[i].defcomplex();
+        for (size_t i = 0; i < Phi.size(); i++) Phi[i].defcomplex();
     }
     mrcpp::mpi::barrier(mrcpp::mpi::comm_wrk);
     mrcpp::print::footer(1, t_tot, 2);

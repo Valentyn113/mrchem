@@ -70,7 +70,7 @@ TEST_CASE("ExchangeHessian", "[exchange_hessian]") {
 
     Phi.distribute();
 
-    for (int i = 0; i < Phi.size(); i++) {
+    for (size_t i = 0; i < Phi.size(); i++) {
         HydrogenFunction f(ns[i], ls[i], ms[i]);
         if (mrcpp::mpi::my_func(Phi[i])) mrcpp::project(Phi[i], f, prec);
     }
@@ -96,12 +96,11 @@ TEST_CASE("ExchangeHessian", "[exchange_hessian]") {
     Phi_x.push_back(Orbital(SPIN::Beta));
     Phi_x.distribute();
 
-    for (int i = 0; i < Phi_x.size(); i++) {
+    for (size_t i = 0; i < Phi_x.size(); i++) {
         HydrogenFunction f(ns_x[i], ls_x[i], ms_x[i]);
         if (mrcpp::mpi::my_func(Phi_x[i])) mrcpp::project(Phi_x[i], f, prec);
     }
 
-    int i = 0;
     DoubleMatrix E = DoubleMatrix::Zero(Phi.size(), Phi.size());
 
     E(0, 0) = 0.0625327715;
@@ -122,7 +121,7 @@ TEST_CASE("ExchangeHessian", "[exchange_hessian]") {
     }
     SECTION("vector apply") {
         OrbitalVector VPhi = V(Phi);
-        for (int i = 0; i < Phi.size(); i++) {
+        for (size_t i = 0; i < Phi.size(); i++) {
             ComplexDouble V_ii = mrcpp::dot(Phi[i], VPhi[i]);
             if (mrcpp::mpi::my_func(Phi[i])) {
                 REQUIRE(V_ii.real() == Catch::Approx(E(i, i)).epsilon(thrs));
@@ -145,8 +144,8 @@ TEST_CASE("ExchangeHessian", "[exchange_hessian]") {
     }
     SECTION("expectation matrix ") {
         ComplexMatrix v = V(Phi, Phi);
-        for (int i = 0; i < Phi.size(); i++) {
-            for (int j = 0; j <= i; j++) {
+        for (size_t i = 0; i < Phi.size(); i++) {
+            for (size_t j = 0; j <= i; j++) {
                 if (std::abs(v(i, j).real()) > thrs) REQUIRE(v(i, j).real() == Catch::Approx(E(i, j)).epsilon(thrs));
                 REQUIRE(v(i, j).imag() < thrs);
             }

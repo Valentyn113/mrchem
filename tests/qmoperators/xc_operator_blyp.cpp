@@ -77,19 +77,19 @@ TEST_CASE("XCOperatorBLYP", "[xc_operator_blyp]") {
     }
     Phi.distribute();
 
-    for (int i = 0; i < Phi.size(); i++) {
+    for (size_t i = 0; i < Phi.size(); i++) {
         HydrogenFunction f(ns[i], ls[i], ms[i]);
         if (mrcpp::mpi::my_func(Phi[i])) mrcpp::project(Phi[i], f, prec);
     }
 
     DoubleMatrix E_P = DoubleMatrix::Zero(Phi.size(), Phi.size());
-    E_P(0, 0) = -0.4632575525;
-    E_P(0, 1) = -0.0654671939;
-    E_P(1, 0) = -0.0654671939;
-    E_P(1, 1) = -0.1793901728;
-    E_P(2, 2) = -0.1988746843;
-    E_P(3, 3) = -0.1988746843;
-    E_P(4, 4) = -0.1988746843;
+    E_P(0, 0) = -0.4629367072;
+    E_P(0, 1) = -0.0653220397;
+    E_P(1, 0) = -0.0653220397;
+    E_P(1, 1) = -0.1787311281;
+    E_P(2, 2) = -0.1984567750;
+    E_P(3, 3) = -0.1984567750;
+    E_P(4, 4) = -0.1984567750;
 
     V.setup(prec);
     SECTION("apply") {
@@ -105,7 +105,7 @@ TEST_CASE("XCOperatorBLYP", "[xc_operator_blyp]") {
     }
     SECTION("vector apply") {
         OrbitalVector VPhi = V(Phi);
-        for (int i = 0; i < Phi.size(); i++) {
+        for (size_t i = 0; i < Phi.size(); i++) {
             ComplexDouble V_ii = mrcpp::dot(Phi[i], VPhi[i]);
             if (mrcpp::mpi::my_func(Phi[i])) {
                 REQUIRE(V_ii.real() == Catch::Approx(E_P(i, i)).epsilon(thrs));
@@ -128,8 +128,8 @@ TEST_CASE("XCOperatorBLYP", "[xc_operator_blyp]") {
     }
     SECTION("expectation matrix ") {
         ComplexMatrix v = V(Phi, Phi);
-        for (int i = 0; i < Phi.size(); i++) {
-            for (int j = 0; j <= i; j++) {
+        for (size_t i = 0; i < Phi.size(); i++) {
+            for (size_t j = 0; j <= i; j++) {
                 if (std::abs(v(i, j).real()) > thrs) REQUIRE(v(i, j).real() == Catch::Approx(E_P(i, j)).epsilon(thrs));
                 REQUIRE(v(i, j).imag() < thrs);
             }

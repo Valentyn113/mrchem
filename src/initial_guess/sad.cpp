@@ -63,7 +63,8 @@ void project_atomic_densities(double prec, Density &rho_tot, const Nuclei &nucs,
 
 bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, const Nuclei &nucs, int zeta) {
     if (Phi.size() == 0) return false;
-    auto restricted = (orbital::size_singly(Phi)) ? false : true;
+
+    auto restricted = (orbital::size_doubly(Phi)) ? true : false;
     mrcpp::print::separator(0, '~');
     print_utils::text(0, "Calculation ", "Compute initial orbitals");
     print_utils::text(0, "Method      ", "Diagonalize SAD Hamiltonian");
@@ -71,6 +72,7 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
     print_utils::text(0, "Screening   ", print_utils::dbl_to_str(screen, 5, true) + " StdDev");
     print_utils::text(0, "Restricted  ", (restricted) ? "True" : "False");
     print_utils::text(0, "Functional  ", "LDA (SVWN5)");
+    print_utils::text(0, "XC Library  ", (mrdft::Factory::libxc) ? "LibXC" : "XCFun");
     print_utils::text(0, "AO basis    ", "Hydrogenic orbitals");
     print_utils::text(0, "Zeta quality", std::to_string(zeta));
     mrcpp::print::separator(0, '~', 2);
@@ -89,8 +91,8 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
     MomentumOperator p(D_p);
     NuclearOperator V_nuc(nucs, prec);
     CoulombOperator J(P_p);
-    XCOperator XC(mrdft_p);
-    RankZeroOperator V = V_nuc + J + XC;
+    XCOperator XC_(mrdft_p);
+    RankZeroOperator V = V_nuc + J + XC_;
 
     auto plevel = Printer::getPrintLevel();
     if (plevel == 1) mrcpp::print::header(1, "SAD Initial Guess");
@@ -102,7 +104,7 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
     initial_guess::sad::project_atomic_densities(prec, rho_j, nucs, screen);
 
     // Compute XC density
-    Density &rho_xc = XC.getDensity(DensityType::Total);
+    Density &rho_xc = XC_.getDensity(DensityType::Total);
     mrcpp::deep_copy(rho_xc, rho_j);
     if (plevel == 1) mrcpp::print::time(1, "Projecting GTO density", t_lap);
 
@@ -141,7 +143,8 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
 
 bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, const Nuclei &nucs) {
     if (Phi.size() == 0) return false;
-    auto restricted = (orbital::size_singly(Phi)) ? false : true;
+
+    auto restricted = (orbital::size_doubly(Phi)) ? true : false;
     mrcpp::print::separator(0, '~');
     print_utils::text(0, "Calculation ", "Compute initial orbitals");
     print_utils::text(0, "Method      ", "Diagonalize SAD Hamiltonian");
@@ -149,6 +152,7 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
     print_utils::text(0, "Screening   ", print_utils::dbl_to_str(screen, 5, true) + " StdDev");
     print_utils::text(0, "Restricted  ", (restricted) ? "True" : "False");
     print_utils::text(0, "Functional  ", "LDA (SVWN5)");
+    print_utils::text(0, "XC Library  ", (mrdft::Factory::libxc) ? "LibXC" : "XCFun");
     print_utils::text(0, "AO basis    ", "3-21G");
     mrcpp::print::separator(0, '~', 2);
 
@@ -165,8 +169,8 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
     MomentumOperator p(D_p);
     NuclearOperator V_nuc(nucs, prec);
     CoulombOperator J(P_p);
-    XCOperator XC(mrdft_p);
-    RankZeroOperator V = V_nuc + J + XC;
+    XCOperator XC_(mrdft_p);
+    RankZeroOperator V = V_nuc + J + XC_;
 
     auto plevel = Printer::getPrintLevel();
     if (plevel == 1) mrcpp::print::header(1, "SAD Initial Guess");
@@ -178,7 +182,7 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
     initial_guess::sad::project_atomic_densities(prec, rho_j, nucs, screen);
 
     // Compute XC density
-    Density &rho_xc = XC.getDensity(DensityType::Total);
+    Density &rho_xc = XC_.getDensity(DensityType::Total);
     mrcpp::deep_copy(rho_xc, rho_j);
     if (plevel == 1) mrcpp::print::time(1, "Projecting GTO density", t_lap);
 
@@ -250,7 +254,7 @@ void initial_guess::sad::project_atomic_densities(double prec, Density &rho_tot,
     Timer t_loc;
     auto N_nucs = nucs.size();
     DoubleVector charges = DoubleVector::Zero(2 * N_nucs);
-    for (int k = 0; k < N_nucs; k++) {
+    for (size_t k = 0; k < N_nucs; k++) {
         if (mrcpp::mpi::wrk_rank != k % mrcpp::mpi::wrk_size) continue;
 
         const std::string &sym = nucs[k].getElement().getSymbol();
@@ -271,7 +275,7 @@ void initial_guess::sad::project_atomic_densities(double prec, Density &rho_tot,
     density::allreduce_density(rho_tot, rho_loc);
     t_com.stop();
 
-    for (int k = 0; k < N_nucs; k++) {
+    for (size_t k = 0; k < N_nucs; k++) {
         std::stringstream o_row;
         o_row << std::setw(w1) << k;
         o_row << std::setw(w2) << nucs[k].getElement().getSymbol();

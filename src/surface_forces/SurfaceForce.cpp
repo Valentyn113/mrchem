@@ -1,3 +1,28 @@
+/*
+ * MRChem, a numerical real-space code for molecular electronic structure
+ * calculations within the self-consistent field (SCF) approximations of quantum
+ * chemistry (Hartree-Fock and Density Functional Theory).
+ * Copyright (C) 2023 Stig Rune Jensen, Luca Frediani, Peter Wind and contributors.
+ *
+ * This file is part of MRChem.
+ *
+ * MRChem is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MRChem is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with MRChem.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * For information on the complete list of contributors to MRChem, see:
+ * <https://mrchem.readthedocs.io/>
+ */
+
 #include "surface_forces/SurfaceForce.h"
 
 #include <MRCPP/MWOperators>
@@ -52,23 +77,18 @@ namespace surface_force {
  * @param gridPos The positions of the grid points where the field should be evaluated. Shape (nGrid, 3).
  */
 MatrixXd nuclearEfield(const MatrixXd &nucPos, const VectorXd &nucCharge, const VectorXd &nucSmoothing, const MatrixXd gridPos) {
+
+    (void)nucSmoothing;
+
     int nGrid = gridPos.rows();
     int nNuc = nucPos.rows();
     MatrixXd Efield = MatrixXd::Zero(nGrid, 3);
     Vector3d r_vect;
     double r;
     double r2, r3;
-    double temp;
-    double c, q;
-    double c2, c3;
-    double c3_times_sqrt_pi_times_three;
-    double sqrt_pi = std::sqrt(M_PI);
+    double q;
     for (int i = 0; i < nNuc; ++i) {
-        c = nucSmoothing(i);
         q = nucCharge(i);
-        c2 = c * c;
-        c3 = c2 * c;
-        c3_times_sqrt_pi_times_three = 3. * std::sqrt(M_PI) * c3;
         for (int j = 0; j < nGrid; j++) {
             r_vect = nucPos.row(i) - gridPos.row(j);
             r = r_vect.norm();
@@ -155,6 +175,9 @@ std::vector<Eigen::Matrix3d> maxwellStress(const Molecule &mol, std::vector<Orbi
  */
 std::vector<Matrix3d> kineticStress(const Molecule &mol, OrbitalVector &Phi, std::vector<std::vector<mrchem::Orbital>> &nablaPhi, std::vector<Orbital> &hessRho, double prec, const MatrixXd &gridPos) {
 
+    (void)mol;
+    (void)prec;
+
     // original formula for kinetic stress:
     // sigma_ij = 0.5 \sum_k phi_k del_i del_j phi_k - (del_i phi_k) (del_j phi_k)
     // using the product rule for the first term:
@@ -162,11 +185,6 @@ std::vector<Matrix3d> kineticStress(const Molecule &mol, OrbitalVector &Phi, std
     // That way, only second derivatives of density is needed which speeds things up. quite a lot.
 
     int nGrid = gridPos.rows();
-    int nOrbs = Phi.size();
-
-    double StressArray[nGrid][3][3];
-
-    double orbVal;
     std::vector<Matrix3d> stress(nGrid);
 
     Eigen::MatrixXd voigtStress = Eigen::MatrixXd::Zero(nGrid, 6);
@@ -174,7 +192,7 @@ std::vector<Matrix3d> kineticStress(const Molecule &mol, OrbitalVector &Phi, std
     std::array<double, 3> pos;
     double n1, n2, n3;
     double occ;
-    for (int iOrb = 0; iOrb < Phi.size(); iOrb++) {
+    for (size_t iOrb = 0; iOrb < Phi.size(); iOrb++) {
         occ = Phi[iOrb].occ();
 
         for (int i = 0; i < nGrid; i++) {
@@ -250,7 +268,7 @@ VectorXd distanceToNearestNeighbour(MatrixXd pos) {
  */
 Eigen::MatrixXd surface_forces(mrchem::Molecule &mol, mrchem::OrbitalVector &Phi, double prec, const json &json_fock, std::string leb_prec, double radius_factor) {
 
-    if (radius_factor > 0.95 && radius_factor < 0.05) { MSG_ABORT("Invalid value of radius_factor") }
+    if (radius_factor > 0.95 || radius_factor < 0.05) { MSG_ABORT("Invalid value of radius_factor") }
 
     // setup density
     mrchem::Density rho(false);
@@ -278,12 +296,11 @@ Eigen::MatrixXd surface_forces(mrchem::Molecule &mol, mrchem::OrbitalVector &Phi
 
     std::vector<std::vector<Orbital>> nablaPhi(Phi.size());
     std::vector<Orbital> hessRho = hess(rho);
-    for (int i = 0; i < Phi.size(); i++) {
+    for (size_t i = 0; i < Phi.size(); i++) {
         if (mrcpp::mpi::my_func(i)) { nablaPhi[i] = nabla(Phi[i]); }
     }
     // setup xc stuff:
     int order = 0;
-    bool shared_memory = json_fock["xc_operator"]["shared_memory"];
     auto json_xcfunc = json_fock["xc_operator"]["xc_functional"];
     bool xc_spin = json_xcfunc["spin"];
     auto xc_cutoff = json_xcfunc["cutoff"];
@@ -332,7 +349,6 @@ Eigen::MatrixXd surface_forces(mrchem::Molecule &mol, mrchem::OrbitalVector &Phi
     VectorXd dist = distanceToNearestNeighbour(posmatrix);
 
     int nLebPoints = 0;
-    int nTinyPoints = 1;
     if (leb_prec == "low") {
         nLebPoints = 194;
     } else if (leb_prec == "medium") {

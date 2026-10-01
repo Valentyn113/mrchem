@@ -31,6 +31,8 @@
 #include "tensor/RankOneOperator.h"
 #include "tensor/RankZeroOperator.h"
 #include <string>
+#include "chemistry/Nucleus.h"
+#include "pseudopotential/projectorOperator.h"
 
 /** @class FockOperator
  *
@@ -76,6 +78,7 @@ public:
     std::shared_ptr<MagneticFieldOperatorImag> &getMagneticOperatorImag() { return this->mag_imag; }
     std::shared_ptr<ReactionOperator> &getReactionOperator() { return this->Ro; }
     std::shared_ptr<AZoraPotential> &getAZoraChiPotential() { return this->chiPot; }
+    std::shared_ptr<ProjectorOperator> &getProjectorOperator() { return this->pp_projector; }
 
     void rotate(const ComplexMatrix &U);
 
@@ -94,6 +97,8 @@ public:
 
     SCFEnergy trace(OrbitalVector &Phi, const Nuclei &nucs);
     ComplexMatrix operator()(OrbitalVector &bra, OrbitalVector &ket);
+    ComplexMatrix kineticMatrix(OrbitalVector &bra, OrbitalVector &ket);
+    ComplexMatrix potentialMatrix(OrbitalVector &bra, OrbitalVector &ket);
 
     OrbitalVector buildHelmholtzArgument(double prec, OrbitalVector Phi, ComplexMatrix F_mat, ComplexMatrix L_mat);
 
@@ -128,6 +133,8 @@ private:
     std::shared_ptr<MagneticFieldOperatorImag> mag_imag{nullptr}; // External magnetic field interaction - imaginary component
     std::shared_ptr<ZoraOperator> chi{nullptr};
     std::shared_ptr<ZoraOperator> chi_inv{nullptr};
+    std::shared_ptr<ProjectorOperator> pp_projector{nullptr};
+
 
     std::shared_ptr<QMPotential> collectZoraBasePotential();
     OrbitalVector buildHelmholtzArgumentZORA(OrbitalVector &Phi, OrbitalVector &Psi, DoubleVector eps, double prec);

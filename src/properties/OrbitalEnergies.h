@@ -58,9 +58,9 @@ public:
 
         std::stringstream o_head;
         o_head << std::setw(w1) << "n";
-        o_head << std::setw(w1) << "Occ";
+        o_head << std::setw(w1 + 3) << "Occ";
         o_head << std::setw(w1) << "Spin";
-        o_head << std::string(w3 - 1, ' ') << ':';
+        o_head << std::string(w3 - 4, ' ') << ':';
         o_head << std::setw(3 * w2) << "Epsilon";
 
         mrcpp::print::header(0, "Orbital Energies (" + id + ")");
@@ -74,7 +74,7 @@ public:
             if (this->spinVec(i) == SPIN::Beta) sp = 'b';
             std::stringstream o_txt;
             o_txt << std::setw(w1 - 1) << i;
-            o_txt << std::setw(w1) << this->occupation(i);
+            o_txt << std::setw(w1 + 3) << std::setprecision(2) << std::fixed << this->occupation(i);
             o_txt << std::setw(w1) << sp;
             print_utils::scalar(0, o_txt.str(), this->epsilon(i), "(au)", pprec);
         }
@@ -88,7 +88,7 @@ public:
         DoubleVector occ = getOccupation();
         const DoubleVector &eps = getEpsilon();
         std::vector<std::string> spn;
-        for (auto i = 0; i < spinVec.size(); i++) {
+        for (int i = 0; i < spinVec.size(); i++) {
             if (this->spinVec(i) == SPIN::Paired) spn.push_back("p");
             if (this->spinVec(i) == SPIN::Alpha) spn.push_back("a");
             if (this->spinVec(i) == SPIN::Beta) spn.push_back("b");

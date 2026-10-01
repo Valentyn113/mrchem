@@ -57,6 +57,10 @@ PBESolver::PBESolver(const Permittivity &e,
         : GPESolver(e, rho_nuc, P, D, kain_hist, max_iter, dyn_thrs, density_type)
         , kappa(k) {}
 
+PBESolver::~PBESolver() {
+    clear();
+}
+
 void PBESolver::computePBTerm(mrcpp::CompFunction<3> &V_tot, const double salt_factor, mrcpp::CompFunction<3> &pb_term) {
     // create a lambda function for the sinh(V) term and multiply it with kappa and salt factor to get the PB term
     auto sinh_f = [salt_factor](const double &V) { return (salt_factor / (4.0 * mrcpp::pi)) * std::sinh(V); };
@@ -64,7 +68,7 @@ void PBESolver::computePBTerm(mrcpp::CompFunction<3> &V_tot, const double salt_f
     mrcpp::CompFunction<3> sinhV;
     sinhV.func_ptr->isreal = 1;
     sinhV.alloc(1);
-    mrcpp::map(this->apply_prec / 100, sinhV.real(), V_tot.real(), sinh_f);
+    mrcpp::treeMap<3, double>(this->apply_prec / 100, sinhV.real(), V_tot.real(), sinh_f);
 
     mrcpp::multiply(pb_term, sinhV, this->kappa, this->apply_prec);
 }
