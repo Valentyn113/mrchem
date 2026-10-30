@@ -161,14 +161,21 @@ inline RankZeroOperator operator*(RankZeroOperator A, RankZeroOperator B) {
             out.oper_exp.push_back(tmp);
         }
     }
-    out.imag = A.imag;
+
+    if(A.imag && B.imag) {
+        out = -1.0 * out;
+        out.imag = false;
+    } else {
+        out.imag = A.imag != B.imag;
+    }
+
     return out;
 }
 
 inline RankZeroOperator operator+(RankZeroOperator A, RankZeroOperator B) {
     RankZeroOperator out;
     out.name() = A.name() + " + " + B.name();
-    if (not(A.imag == B.imag)) MSG_ABORT("Cannot add real and imaginary operators " + out.name());
+    //if (not(A.imag == B.imag)) MSG_ABORT("Cannot add real and imaginary operators " + out.name());
     out.imag = A.imag;
     for (size_t i = 0; i < A.oper_exp.size(); i++) {
         out.coef_exp.push_back(A.coef_exp[i]);
@@ -184,7 +191,7 @@ inline RankZeroOperator operator+(RankZeroOperator A, RankZeroOperator B) {
 inline RankZeroOperator operator-(RankZeroOperator A, RankZeroOperator B) {
     RankZeroOperator out;
     out.name() = A.name() + " - " + B.name();
-    if (not(A.imag == B.imag)) MSG_ABORT("Cannot add real and imaginary operators " + out.name());
+    //if (not(A.imag == B.imag)) MSG_ABORT("Cannot add real and imaginary operators " + out.name());
     out.imag = A.imag;
     for (size_t i = 0; i < A.oper_exp.size(); i++) {
         out.coef_exp.push_back(A.coef_exp[i]);

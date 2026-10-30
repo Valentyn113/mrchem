@@ -78,6 +78,8 @@ void GroundStateSolver::printProperty() const {
     double E_next_1 = scf_1.getNuclearExternalEnergy();
     double E_mag_0 = scf_0.getExternalMagneticEnergy();
     double E_mag_1 = scf_1.getExternalMagneticEnergy();
+    double E_mag_imag_0 = scf_0.getExternalMagneticEnergyImag();
+    double E_mag_imag_1 = scf_1.getExternalMagneticEnergyImag();
     double Er_0 = scf_0.getReactionEnergy();
     double Er_1 = scf_1.getReactionEnergy();
     double Er_el_0 = scf_0.getElectronReactionEnergy();
@@ -119,6 +121,7 @@ void GroundStateSolver::printProperty() const {
     if (has_mag) {
         mrcpp::print::separator(2, '-');
         printUpdate(2, " Magnetic field (el)  ", E_mag_1, E_mag_1 - E_mag_0, this->propThrs);
+        printUpdate(2, " Magnetic imag (el)  ", E_mag_imag_1, E_mag_imag_1 - E_mag_imag_0, this->propThrs);
     }
     if (has_react) {
         mrcpp::print::separator(2, '-');

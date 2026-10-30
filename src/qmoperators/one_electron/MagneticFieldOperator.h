@@ -52,9 +52,29 @@ public:
             : MagneticFieldOperator(f, PositionOperator(o)) {}
 
     MagneticFieldOperator(const std::array<double, 3> &f, PositionOperator r) {
-        auto Bxy = (f[0] * r[1] - f[1] * r[0]);
-        auto Bxz = (f[0] * r[2] - f[2] * r[0]);
+        /*auto B2 = f[0] * f[0] + f[1] * f[1] + f[2] * f[2];
+        auto r2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2];
+        auto Br = f[0] * r[0] + f[1] * r[1] + f[2] * r[2];
+        RankZeroOperator MF_e = 0.125 * (B2 * r2 - Br * Br);*/
+
+        /*auto Bx2 = f[0] * f[0];
+        auto By2 = f[1] * f[1];
+        auto Bz2 = f[2] * f[2];
+        auto rx2 = r[0] * r[0];
+        auto ry2 = r[1] * r[1];
+        auto rz2 = r[2] * r[2];
+
+        auto squares = Bx2 * ry2 + Bx2 * rz2 + By2 * rx2 + By2 * rz2 + Bz2 * rx2 + Bz2 * ry2;
+        auto overlaps = -2.0 * (f[0] * f[1] * r[0] * r[1] + f[0] * f[2] * r[0] * r[2] + f[1] * f[2] * r[1] * r[2]);
+        RankZeroOperator MF_e = 0.125 * (squares + overlaps);*/
+
+        /*MagneticVectorPotentialOperator A(f, r);
+
+        RankZeroOperator MF_e = 0.5 * (A[0] * A[0] + A[1] * A[1] + A[2] * A[2]);*/
+
         auto Byz = (f[1] * r[2] - f[2] * r[1]);
+        auto Bxz = (f[2] * r[0] - f[0] * r[2]);
+        auto Bxy = (f[0] * r[1] - f[1] * r[0]);
 
         RankZeroOperator MF_e = 0.125 * (Bxy * Bxy + Bxz * Bxz + Byz * Byz);
 

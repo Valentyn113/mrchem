@@ -46,13 +46,13 @@ public:
     explicit SCFEnergy(double kin = 0.0, double nn = 0.0,
                        double en = 0.0, double ee = 0.0,
                        double x = 0.0, double xc = 0.0,
-                       double next = 0.0, double eext = 0.0, double emag = 0.0,
+                       double next = 0.0, double eext = 0.0, double emag = 0.0, double emag_imag = 0.0,
                        double rt = 0.0, double rn = 0.0, double re = 0.0,
                        double nl = 0.0) :
         E_kin(kin), E_nn(nn), E_en(en), E_ee(ee),
-          E_x(x), E_xc(xc), E_next(next), E_eext(eext), E_mag(emag), Er_tot(rt), Er_nuc(rn), Er_el(re), E_nl(nl) {
+          E_x(x), E_xc(xc), E_next(next), E_eext(eext), E_mag(emag), E_mag_imag(emag_imag), Er_tot(rt), Er_nuc(rn), Er_el(re), E_nl(nl) {
             E_nuc = E_nn + E_next + Er_nuc;
-            E_el = E_kin + E_en + E_ee + E_xc + E_x + E_eext + E_mag + Er_el + E_nl;
+            E_el = E_kin + E_en + E_ee + E_xc + E_x + E_eext + E_mag + E_mag_imag + Er_el + E_nl;
         }
 
     double getTotalEnergy() const { return this->E_nuc + this->E_el; }
@@ -66,6 +66,7 @@ public:
     double getElectronExternalEnergy() const { return this->E_eext; }
     double getNuclearExternalEnergy() const { return this->E_next; }
     double getExternalMagneticEnergy() const { return this->E_mag; }
+    double getExternalMagneticEnergyImag() const { return this->E_mag_imag; }
     double getExchangeCorrelationEnergy() const { return this->E_xc; }
     double getExchangeEnergy() const { return this->E_x; }
     double getReactionEnergy() const { return this->Er_tot; }
@@ -101,6 +102,7 @@ public:
         if (has_mag) {
             mrcpp::print::separator(0, '-');
             print_utils::scalar(0, "Magnetic field (el)  ", E_mag, "(au)", pprec, false);
+            print_utils::scalar(0, "Magnetic imag (el)  ", E_mag_imag, "(au)", pprec, false);
         }
         if (has_react) {
             mrcpp::print::separator(0, '-');
@@ -128,6 +130,7 @@ public:
             {"E_next", E_next},
             {"E_eext", E_eext},
             {"E_mag", E_mag},
+            {"E_mag_imag", E_mag_imag},
             {"E_x", E_x},
             {"E_xc", E_xc},
             {"E_el", E_el},
@@ -153,6 +156,7 @@ private:
     double E_next{0.0};
     double E_eext{0.0};
     double E_mag{0.0};
+    double E_mag_imag{0.0};
     double Er_tot{0.0};
     double Er_nuc{0.0};
     double Er_el{0.0};

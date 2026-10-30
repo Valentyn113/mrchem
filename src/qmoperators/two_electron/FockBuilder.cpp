@@ -48,11 +48,15 @@
 #include "qmoperators/one_electron/NuclearOperator.h"
 #include "qmoperators/one_electron/ZoraOperator.h"
 #include "qmoperators/qmoperator_utils.h"
+#include "tensor/RankZeroOperator.h"
 #include "utils/math_utils.h"
 
 #include "qmoperators/one_electron/AZoraPotential.h"
+#include "utils/print_utils.h"
 
 #include <filesystem>
+#include <utils/Printer.h>
+#include <utils/math_utils.h>
 
 #include "pseudopotential/projectorOperator.h"
 
@@ -104,6 +108,7 @@ void FockBuilder::setup(double prec) {
 
     this->prec = prec;
     if (this->mom != nullptr) this->momentum().setup(prec);
+    if (this->ang_mom != nullptr) this->angularMomentum().setup(prec);
     this->potential().setup(prec);
     this->potential_imag().setup(prec);
     this->perturbation().setup(prec); //TODO: uncomment when response is implemented for multiple components
@@ -162,6 +167,7 @@ void FockBuilder::setup(double prec) {
  */
 void FockBuilder::clear() {
     if (this->mom != nullptr) this->momentum().clear();
+    if (this->ang_mom != nullptr) this->angularMomentum().clear();
     this->potential().clear();
     this->potential_imag().clear();
     this->perturbation().clear();
@@ -213,6 +219,7 @@ SCFEnergy FockBuilder::trace(OrbitalVector &Phi, const Nuclei &nucs) {
     double E_eext = 0.0; // External field contribution to the electronic energy
     double E_next = 0.0; // External field contribution to the nuclear energy
     double E_mag = 0.0; // External magnetic field contributions to electronic energy
+    double E_mag_imag = 0.0;
     double Er_nuc = 0.0; // Nuclear reaction energy
     double Er_el = 0.0;  // Electronic reaction energy
     double Er_tot = 0.0; // Total reaction energy
@@ -251,7 +258,30 @@ SCFEnergy FockBuilder::trace(OrbitalVector &Phi, const Nuclei &nucs) {
     // Electronic part
     if (this->nuc != nullptr) { E_en = this->nuc->trace(Phi).real(); }
 
-    if (this->mag != nullptr && this->mag_imag != nullptr) { E_mag = this->mag->trace(Phi).real() + this->mag_imag->trace(Phi).real(); }
+    /*if (this->mag != nullptr && this->mag_imag != nullptr) {
+        auto M_mag = this->mag->trace(Phi);
+        mrcpp::print::value(0, "Mag      (real)", this->mag->trace(Phi).real());
+        //mrcpp::print::value(0, "Mag      (imag)", this->mag->trace(Phi).imag());
+        //mrcpp::print::value(0, "Mag_imag (real)", this->mag_imag->trace(Phi).real());
+        mrcpp::print::value(0, "Mag_imag (imag)", this->mag_imag->trace(Phi).imag());
+        print_utils::matrix(0, "B Matrix (real)", (* this->mag)(Phi, Phi).real(), 10);
+        //print_utils::matrix(0, "B Matrix (imag)", (* this->mag)(Phi, Phi).imag(), 10);
+        //print_utils::matrix(0, "B_imag Matrix (real)", (* this->mag_imag)(Phi, Phi).real(), 10);
+        print_utils::matrix(0, "B_imag Matrix (imag)", (* this->mag_imag)(Phi, Phi).imag(), 10);
+    }*/
+    if (this->mag != nullptr && this->mag_imag != nullptr) {
+        mrcpp::print::value(0, "Mag      (real)", this->mag->trace(Phi).real());
+        mrcpp::print::value(0, "Mag      (imag)", this->mag->trace(Phi).imag());
+        mrcpp::print::value(0, "Mag_imag (real)", this->mag_imag->trace(Phi).real());
+        mrcpp::print::value(0, "Mag_imag (imag)", this->mag_imag->trace(Phi).imag());
+        E_mag = this->mag->trace(Phi).real();
+        E_mag_imag = this->mag_imag->trace(Phi).real();
+    }
+
+    if (this->mag != nullptr && this->mag_imag != nullptr && this->ang_mom != nullptr) {
+        print_utils::vector(0, "Ang_Mom", this->angularMomentum().trace(Phi).real());
+        print_utils::vector(0, "Ang_Mom_i", this->angularMomentum().trace(Phi).imag());
+    }
 
     if (this->coul != nullptr) E_ee = 0.5 * this->coul->trace(Phi).real();
     if (this->ex != nullptr) E_x = -this->exact_exchange * this->ex->trace(Phi).real();
@@ -264,7 +294,7 @@ SCFEnergy FockBuilder::trace(OrbitalVector &Phi, const Nuclei &nucs) {
     mrcpp::print::footer(2, t_tot, 2);
     if (plevel == 1) mrcpp::print::time(1, "Computing molecular energy", t_tot);
 
-    return SCFEnergy{E_kin, E_nn, E_en, E_ee, E_x, E_xc, E_next, E_eext, E_mag, Er_tot, Er_nuc, Er_el, E_nl};
+    return SCFEnergy{E_kin, E_nn, E_en, E_ee, E_x, E_xc, E_next, E_eext, E_mag, E_mag_imag, Er_tot, Er_nuc, Er_el, E_nl};
 }
 
 /** @brief Compute the Fock matrix F_ij = <bra_i|F|ket_j>
@@ -299,8 +329,13 @@ ComplexMatrix FockBuilder::operator()(OrbitalVector &bra, OrbitalVector &ket) {
     ComplexMatrix V_mat = ComplexMatrix::Zero(bra.size(), ket.size());
     V_mat += potential()(bra, ket);
 
-    if (potential_imag().size() > 0)
+    if (potential_imag().size() > 0) {
+        print_utils::text(0, "Fock Imag", "call_operator");
         V_mat += potential_imag()(bra, ket);
+    }
+
+    //print_utils::matrix(2, "V Matrix (real)", V_mat.real(), 10);
+    //print_utils::matrix(2, "V Matrix (imag)", V_mat.imag(), 10);
 
     mrcpp::print::footer(2, t_tot, 2);
     if (plevel == 1) mrcpp::print::time(1, "Computing Fock matrix", t_tot);
@@ -317,7 +352,14 @@ ComplexMatrix FockBuilder::kineticMatrix(OrbitalVector &bra, OrbitalVector &ket)
 }
 
 ComplexMatrix FockBuilder::potentialMatrix(OrbitalVector &bra, OrbitalVector &ket) {
-    return potential()(bra, ket);
+    ComplexMatrix V_mat = potential()(bra, ket);
+
+    if (potential_imag().size() > 0) {
+        print_utils::text(0, "Fock Imag", "potentialMatrix");
+        V_mat += potential_imag()(bra, ket);
+    }
+
+    return V_mat;
 }
 
 OrbitalVector FockBuilder::buildHelmholtzArgument(double prec, OrbitalVector Phi, ComplexMatrix F_mat, ComplexMatrix L_mat) {
@@ -362,6 +404,7 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
     double two_cc = 2.0 * c * c;
     MomentumOperator &p = momentum();
     RankZeroOperator &V = potential();
+    RankZeroOperator &V_imag = potential_imag();
     RankZeroOperator &chi = *this->chi;
     RankZeroOperator &chi_m1 = *this->chi_inv;
     RankZeroOperator operOne = 0.5 * tensor::dot(p(chi), p);
@@ -398,6 +441,11 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
 
     Timer t_2;
     OrbitalVector termTwo = V(Phi);
+
+    if (V_imag.size() > 0) {
+        OrbitalVector termTwo_imag =  V_imag(Phi);
+        termTwo = orbital::add(ComplexDouble(1.0, 0.0), termTwo, ComplexDouble(1.0, 0.0), termTwo_imag, prec);
+    }
 
     mrcpp::print::time(2, "Computing potential term", t_2);
 
@@ -489,10 +537,16 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
 OrbitalVector FockBuilder::buildHelmholtzArgumentNREL(OrbitalVector &Phi, OrbitalVector &Psi) {
     // Get necessary operators
     RankZeroOperator &V = this->potential();
+    RankZeroOperator &V_imag = this->potential();
 
     // Compute OrbitalVectors
     Timer t_pot;
     OrbitalVector termOne = V(Phi);
+
+    if (V_imag.size() > 0) {
+        OrbitalVector termOne_imag =  V_imag(Phi);
+        termOne = orbital::add(ComplexDouble(1.0, 0.0), termOne, ComplexDouble(1.0, 0.0), termOne_imag, prec);
+    }
 
     mrcpp::print::time(2, "Computing potential term", t_pot);
 
@@ -514,12 +568,18 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentCompact(OrbitalVector &Phi, Orb
     double two_cc = 2.0 * c * c;
     MomentumOperator &p = momentum();
     RankZeroOperator &V = potential();
+    RankZeroOperator &V_imag = this->potential();
     RankZeroOperator &chi = *this->chi;
     // RankZeroOperator &chi_m1 = *this->chi_inv; //not needed in this formulation
 
     // Compute OrbitalVectorso
     Timer t_pot;
     OrbitalVector termOne = V(Phi);
+
+    if (V_imag.size() > 0) {
+        OrbitalVector termOne_imag =  V_imag(Phi);
+        termOne = orbital::add(ComplexDouble(1.0, 0.0), termOne, ComplexDouble(1.0, 0.0), termOne_imag, prec);
+    }
 
     OrbitalVector termTwo(Phi.size());//compute ZORA correction term (σ·p)χ(σ·p)|ψ>
     //Need to know if we have to apply the σ matrices in a MPI-safe way

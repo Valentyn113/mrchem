@@ -28,6 +28,7 @@
 
 #include "chemistry/Nucleus.h"
 #include "qmoperators/QMPotential.h"
+#include "qmoperators/one_electron/AngularMomentumOperator.h"
 #include "tensor/RankOneOperator.h"
 #include "tensor/RankZeroOperator.h"
 #include <string>
@@ -68,6 +69,7 @@ public:
     RankZeroOperator &potential() { return this->V; }
     RankZeroOperator &potential_imag() { return this->V_imag; }
     RankZeroOperator &perturbation() { return this->H_1; }
+    AngularMomentumOperator &angularMomentum() { return *this->ang_mom; }
 
     std::shared_ptr<MomentumOperator> &getMomentumOperator() { return this->mom; }
     std::shared_ptr<NuclearOperator> &getNuclearOperator() { return this->nuc; }
@@ -77,6 +79,7 @@ public:
     std::shared_ptr<ElectricFieldOperator> &getExtOperator() { return this->ext; }
     std::shared_ptr<MagneticFieldOperator> &getMagneticOperator() { return this->mag; }
     std::shared_ptr<MagneticFieldOperatorImag> &getMagneticOperatorImag() { return this->mag_imag; }
+    std::shared_ptr<AngularMomentumOperator> &getAngularMomentumOperator() { return this->ang_mom; }
     std::shared_ptr<ReactionOperator> &getReactionOperator() { return this->Ro; }
     std::shared_ptr<AZoraPotential> &getAZoraChiPotential() { return this->chiPot; }
     std::shared_ptr<ProjectorOperator> &getProjectorOperator() { return this->pp_projector; }
@@ -132,6 +135,7 @@ private:
     std::shared_ptr<ElectricFieldOperator> ext{nullptr}; // Total external potential
     std::shared_ptr<MagneticFieldOperator> mag{nullptr}; // External magnetic field interaction
     std::shared_ptr<MagneticFieldOperatorImag> mag_imag{nullptr}; // External magnetic field interaction - imaginary component
+    std::shared_ptr<AngularMomentumOperator> ang_mom{nullptr}; // External magnetic vector potential
     std::shared_ptr<CouplingOperator> chi{nullptr};      // chi = V/(2mc^2 - V) for ZORA
     std::shared_ptr<CouplingOperator> chi_inv{nullptr};
     std::shared_ptr<ProjectorOperator> pp_projector{nullptr};

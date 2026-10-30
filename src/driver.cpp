@@ -30,6 +30,7 @@
 
 #include "driver.h"
 #include <filesystem>
+#include <utils/math_utils.h>
 
 #include "chemistry/Molecule.h"
 #include "chemistry/Nucleus.h"
@@ -43,6 +44,8 @@
 #include "initial_guess/sad.h"
 #include "initial_guess/nao.h"
 
+#include "mrchem.h"
+#include "qmoperators/one_electron/AngularMomentumOperator.h"
 #include "utils/MolPlotter.h"
 #include "utils/math_utils.h"
 #include "utils/print_utils.h"
@@ -584,8 +587,9 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
         if (err > 0.01) MSG_WARN("MO not normalized!");
     }
 
-    if (complex)
+    if (complex) {
         Phi = orbital::CopyToComplex(Phi);
+    }
 
     orbital::print(Phi);
     return success;
@@ -1605,12 +1609,17 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
             auto field = json_fock["external_operator"]["magnetic_field"].get<std::array<double, 3>>();
             auto r_O = json_fock["external_operator"]["r_O"];
 
+            double thresh = json_fock["coulomb_operator"]["poisson_prec"];
+            double wave_function_radius=2.0*sqrt(-log(thresh)/sqrt(field[0]*field[0] + field[1]*field[1] + field[2]*field[2]));
+            double potential_radius=wave_function_radius*1.6;
+            print_utils::scalar(0, "Potential radius", potential_radius, "", 5);
             // TODO do not hardcode this
             auto D_p = driver::get_derivative("bspline");
             auto V_mag = std::make_shared<MagneticFieldOperator>(field, r_O);
             auto V_mag_imag = std::make_shared<MagneticFieldOperatorImag>(field, D_p, r_O);
             F.getMagneticOperator() = V_mag;
             F.getMagneticOperatorImag() = V_mag_imag;
+            F.getAngularMomentumOperator() = std::make_shared<AngularMomentumOperator>(driver::get_derivative("bspline"), r_O);
         }
     }
     std::cout << "driver::build_fock_operator: finally building the fock operator" << std::endl;

@@ -27,6 +27,7 @@
 
 #include "tensor/RankZeroOperator.h"
 
+#include "PositionOperator.h"
 #include "H_B_dip.h"
 
 /** @class MagneticFieldOperatorImag
@@ -44,22 +45,36 @@ namespace mrchem {
 class MagneticFieldOperatorImag final : public RankZeroOperator {
 public:
     MagneticFieldOperatorImag(const Eigen::Vector3d &f, std::shared_ptr<mrcpp::DerivativeOperator<3>> D, const mrcpp::Coord<3> &o)
-            : MagneticFieldOperatorImag(std::array<double, 3>{f[0], f[1], f[2]}, H_B_dip(D, o)) {}
+            : MagneticFieldOperatorImag(std::array<double, 3>{f[0], f[1], f[2]}, D, o) {}
 
-    MagneticFieldOperatorImag(const Eigen::Vector3d &f, H_B_dip mu)
-            : MagneticFieldOperatorImag(std::array<double, 3>{f[0], f[1], f[2]}, mu) {}
+    MagneticFieldOperatorImag(const std::array<double, 3> &f, std::shared_ptr<mrcpp::DerivativeOperator<3>> D, const mrcpp::Coord<3> &o) {
+        auto nabla = NablaOperator(D, true);
+        auto r = PositionOperator(o);
 
-    MagneticFieldOperatorImag(const std::array<double, 3> &f, std::shared_ptr<mrcpp::DerivativeOperator<3>> D, const mrcpp::Coord<3> &o)
-            : MagneticFieldOperatorImag(f, H_B_dip(D, o)) {}
+        auto Lyz = (r[1] * nabla[2] - r[2] * nabla[1]);
+        auto Lzx = (r[2] * nabla[0] - r[0] * nabla[2]);
+        auto Lxy = (r[0] * nabla[1] - r[1] * nabla[0]);
 
-    MagneticFieldOperatorImag(const std::array<double, 3> &f, H_B_dip mu) {
         // -i * B * L_0
-        RankZeroOperator MF_dip = f[0] * mu[0] + f[1] * mu[1] + f[2] * mu[2];
+        RankZeroOperator MF_dip = -0.5 * (f[0] * Lyz + f[1] * Lzx + f[2] * Lxy);
+
+        /*auto Lyz = (f[1] * r[2] - f[2] * r[1]);
+        auto Lzx = (f[2] * r[0] - f[0] * r[2]);
+        auto Lxy = (f[0] * r[1] - f[1] * r[0]);
+
+        // -i * B * L_0
+        RankZeroOperator MF_dip = -0.5 * (nabla[0] * Lyz + nabla[1] * Lzx + nabla[2] * Lxy);*/
+
+        /*auto r = PositionOperator(o);
+        auto p = MomentumOperator(D);
+        MagneticVectorPotentialOperator A(f, r);
+
+        // -i * B * L_0
+        RankZeroOperator MF_dip = (A[0] * p[0] + A[1] * p[1] + A[2] * p[2]);*/
         MF_dip.setImag(true);
 
         // Invoke operator= to assign *this operator
         RankZeroOperator &HMF = (*this);
-        //HMF = f[0] * mu[0] + f[1] * mu[1] + f[2] * mu[2];
         HMF = MF_dip;
         HMF.name() = "B . mu_B";
     }
