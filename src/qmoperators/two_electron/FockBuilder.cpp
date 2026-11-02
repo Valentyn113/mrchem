@@ -537,7 +537,7 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
 OrbitalVector FockBuilder::buildHelmholtzArgumentNREL(OrbitalVector &Phi, OrbitalVector &Psi) {
     // Get necessary operators
     RankZeroOperator &V = this->potential();
-    RankZeroOperator &V_imag = this->potential();
+    RankZeroOperator &V_imag = this->potential_imag();
 
     // Compute OrbitalVectors
     Timer t_pot;
@@ -568,7 +568,7 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentCompact(OrbitalVector &Phi, Orb
     double two_cc = 2.0 * c * c;
     MomentumOperator &p = momentum();
     RankZeroOperator &V = potential();
-    RankZeroOperator &V_imag = this->potential();
+    RankZeroOperator &V_imag = this->potential_imag();
     RankZeroOperator &chi = *this->chi;
     // RankZeroOperator &chi_m1 = *this->chi_inv; //not needed in this formulation
 

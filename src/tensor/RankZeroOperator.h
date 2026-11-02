@@ -162,12 +162,7 @@ inline RankZeroOperator operator*(RankZeroOperator A, RankZeroOperator B) {
         }
     }
 
-    if(A.imag && B.imag) {
-        out = -1.0 * out;
-        out.imag = false;
-    } else {
-        out.imag = A.imag != B.imag;
-    }
+    out.imag = (A.imag != B.imag);
 
     return out;
 }

@@ -316,6 +316,12 @@ json driver::scf::run(const json &json_scf, Molecule &mol) {
 
     // save the orbitals for MOM/IMOM before the initial guess energy is calculated due to localization/diagonalization
     if (scf::guess_orbitals(json_guess, json_occ, mol, n_components)) {
+        if (F.getMagneticOperatorImag() != nullptr) {
+            auto &Phi = mol.getOrbitals();
+            bool all_complex = true;
+            for (auto &phi_i : Phi) all_complex = all_complex and phi_i.iscomplex();
+            if (not all_complex) Phi = orbital::CopyToComplex(Phi);
+        }
         if (json_scf.contains("scf_solver")) {
             if (json_scf["scf_solver"]["deltascf_method"] == "IMOM" || json_scf["scf_solver"]["deltascf_method"] == "MOM") {
                 if (_useExchange)
@@ -1609,10 +1615,6 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
             auto field = json_fock["external_operator"]["magnetic_field"].get<std::array<double, 3>>();
             auto r_O = json_fock["external_operator"]["r_O"];
 
-            double thresh = json_fock["coulomb_operator"]["poisson_prec"];
-            double wave_function_radius=2.0*sqrt(-log(thresh)/sqrt(field[0]*field[0] + field[1]*field[1] + field[2]*field[2]));
-            double potential_radius=wave_function_radius*1.6;
-            print_utils::scalar(0, "Potential radius", potential_radius, "", 5);
             // TODO do not hardcode this
             auto D_p = driver::get_derivative("bspline");
             auto V_mag = std::make_shared<MagneticFieldOperator>(field, r_O);
